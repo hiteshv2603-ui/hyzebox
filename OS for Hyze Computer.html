@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HyzeBox OS</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;
+  --bg2:#151b27;
+  --acc:#577db7;
+  --acc2:#2C64BA;
+  --green:#5fd87a;
+  --red:#f07878;
+  --yellow:#e8c84a;
+  --cyan:#6ab8ea;
+  --txt:#e6edf3;
+  --txt2:#8b949e;
+  --border:rgba(87,125,183,.18);
+  --mono:'JetBrains Mono',monospace;
+}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  font-family:var(--mono);
+  background:var(--bg);
+  color:var(--txt);
+}
+
+/* ── BOOT SCREEN ── */
+#boot{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;
+}
+#boot-logo{
+  font-size:13px;line-height:1.2;color:var(--acc);white-space:pre;
+  text-shadow:0 0 30px rgba(87,125,183,.5);margin-bottom:28px;
+  opacity:0;animation:fadein .5s .1s forwards;
+}
+#boot-lines{font-size:12px;color:var(--txt2);width:540px;max-width:90vw;}
+.boot-line{display:block;opacity:0;animation:fadein .12s forwards;line-height:1.9;white-space:pre;}
+.boot-line .ok{color:var(--green)}.boot-line .acc{color:var(--acc)}
+@keyframes fadein{to{opacity:1}}
+
+/* ── TERMINAL ── */
+#terminal{
+  display:none;position:fixed;inset:0;flex-direction:column;background:var(--bg);
+}
+#titlebar{
+  height:32px;min-height:32px;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0;user-select:none;
+}
+#tb-title{flex:1;text-align:center;font-size:11px;color:var(--txt2);letter-spacing:.3px}
+#tb-right{font-size:10px;color:var(--txt2)}
+#output{
+  flex:1;overflow-y:auto;padding:16px 22px 4px;
+  font-size:13.5px;line-height:1.85;scroll-behavior:smooth;
+}
+#output::-webkit-scrollbar{width:4px}
+#output::-webkit-scrollbar-thumb{background:rgba(87,125,183,.3);border-radius:2px}
+#output::-webkit-scrollbar-thumb:hover{background:rgba(87,125,183,.55)}
+.line{display:block;white-space:pre-wrap;word-break:break-word;animation:li .05s ease forwards}
+@keyframes li{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+.line.out{color:var(--txt)}
+.line.ok{color:var(--green)}
+.line.err{color:var(--red)}
+.line.inf{color:var(--cyan)}
+.line.warn{color:var(--yellow)}
+.line.dim{color:var(--txt2)}
+.line.acc{color:var(--acc)}
+.line.blank{height:5px;display:block}
+.prompt-line{display:flex;flex-wrap:wrap;align-items:baseline;white-space:pre;font-size:13.5px;line-height:1.85}
+.p-user{color:var(--green);font-weight:600}
+.p-at,.p-sep,.p-dollar{color:var(--txt2)}
+.p-host{color:var(--acc);font-weight:600}
+.p-path{color:var(--cyan)}
+.p-cmd{color:var(--txt)}
+#inputrow{
+  display:flex;align-items:center;padding:8px 22px 14px;flex-shrink:0;
+}
+#input-prompt{white-space:nowrap;flex-shrink:0;font-size:13.5px;line-height:1}
+#cmd{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--txt);font-family:var(--mono);font-size:13.5px;
+  caret-color:var(--green);padding-left:6px;
+}
+
+/* ── BROWSER OVERLAY ── */
+#browser-overlay{
+  display:none;position:fixed;inset:0;background:var(--bg);flex-direction:column;z-index:1000;
+}
+#browser-overlay.open{display:flex}
+#br-bar{
+  height:44px;min-height:44px;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;
+}
+#br-addr-wrap{
+  flex:1;display:flex;align-items:center;
+  background:rgba(4,6,12,.7);border:1px solid var(--border);
+  border-radius:8px;height:28px;padding:0 10px;gap:6px;font-size:12px;
+}
+#br-lock{font-size:11px;flex-shrink:0}
+#br-addr{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--txt);font-family:var(--mono);font-size:12px;
+}
+#br-spinner{
+  width:13px;height:13px;border-radius:50%;
+  border:2px solid rgba(87,125,183,.2);border-top-color:var(--acc);
+  flex-shrink:0;display:none;animation:spin .7s linear infinite;
+}
+#br-spinner.on{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.br-btn{
+  background:rgba(87,125,183,.14);border:1px solid var(--border);
+  border-radius:6px;color:var(--txt2);cursor:pointer;
+  padding:3px 11px;font-size:11px;font-family:var(--mono);
+  transition:background .15s,color .15s;flex-shrink:0;
+}
+.br-btn:hover{background:rgba(87,125,183,.3);color:var(--txt)}
+.br-btn.danger{background:rgba(240,120,120,.1);border-color:rgba(240,120,120,.2);color:#f07878}
+.br-btn.danger:hover{background:rgba(240,120,120,.22)}
+#br-frame{flex:1;border:none;background:#fff;}
+#br-err{
+  flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;color:var(--txt2);font-size:13px;text-align:center;padding:32px;
+}
+#br-err.show{display:flex}
+#br-err .eico{font-size:48px;opacity:.4;margin-bottom:8px}
+#br-err .etitle{font-size:16px;color:var(--txt);font-weight:600}
+#br-err .eurl{font-size:11px;color:var(--acc);opacity:.7;word-break:break-all;max-width:500px;margin-top:4px}
+#br-err .ebtn{
+  background:rgba(87,125,183,.15);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);cursor:pointer;
+  padding:8px 18px;font-size:12px;font-family:var(--mono);
+  transition:background .15s;margin-top:4px;
+}
+#br-err .ebtn:hover{background:rgba(87,125,183,.3)}
+
+/* scanlines */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:99999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);
+}
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <div id="boot-logo">
+ ██╗  ██╗██╗   ██╗███████╗███████╗
+ ██║  ██║╚██╗ ██╔╝╚══███╔╝██╔════╝
+ ███████║ ╚████╔╝   ███╔╝ █████╗  
+ ██╔══██║  ╚██╔╝   ███╔╝  ██╔══╝  
+ ██║  ██║   ██║   ███████╗███████╗
+ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝</div>
+  <div id="boot-lines"></div>
+</div>
+
+<div id="terminal">
+  <div id="titlebar">
+    <div id="tb-title">hyzebox@terminal: ~</div>
+    <div id="tb-right"></div>
+  </div>
+  <div id="output"></div>
+  <div id="inputrow">
+    <div id="input-prompt">
+      <span class="p-user">hyzebox</span><span class="p-at">@</span><span class="p-host">terminal</span><span class="p-sep">:</span><span class="p-path" id="pp">~</span><span class="p-dollar"> $</span>
+    </div>
+    <input id="cmd" type="text" autocomplete="off" spellcheck="false" autofocus>
+  </div>
+</div>
+
+<div id="browser-overlay">
+  <div id="br-bar">
+    <div id="br-addr-wrap">
+      <span id="br-lock">🔍</span>
+      <input id="br-addr" type="text" spellcheck="false" placeholder="Search or enter URL...">
+      <div id="br-spinner"></div>
+    </div>
+    <button class="br-btn" onclick="brNavigate()">Go</button>
+    <button class="br-btn danger" onclick="closeBrowser()">✕ exit</button>
+  </div>
+  <iframe id="br-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation" allow="autoplay; fullscreen"></iframe>
+  <div id="br-err">
+    <div class="eico">:(</div>
+    <div class="etitle">Can't reach this page</div>
+    <div id="br-emsg" style="color:var(--txt2);font-size:12px;margin-top:4px"></div>
+    <div id="br-eurl" class="eurl"></div>
+    <button class="ebtn" onclick="window.open(currentURL,'_blank')">Open in real browser ↗</button>
+    <button class="ebtn" onclick="brReload()">Try again</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const _boot=Date.now();
+
+/* ── VFS ── */
+const vfs={
+  '/home/hyzebox':{
+    Documents:{
+      'readme.txt':'Welcome to HyzeBox OS v5\n\nType "help" for commands.\nType "browser <url>" to surf the web.',
+      'notes.md':'# Notes\n\nHyzeBox OS — a browser-native terminal OS.\n',
+      'todo.txt':'[ ] Build something cool\n[ ] Type neofetch\n[ ] Open the browser',
+    },
+    Projects:{
+      'app.js':'const app={name:"HyzeApp",run(){console.log(this.name)}};\napp.run();',
+      'style.css':'body{font-family:Lexend;background:#0d1117;color:#e6edf3}',
+      'index.html':'<!DOCTYPE html>\n<html>\n<head><title>HyzeApp</title></head>\n<body><h1>Hello HyzeBox!</h1></body>\n</html>',
+    },
+    Downloads:{},
+    '.bashrc':'# HyzeBox shell config\nexport PATH=/usr/local/bin:/usr/bin:/bin\nexport EDITOR=nano\nexport TERM=xterm-256color\n',
+  }
+};
+const HOME='/home/hyzebox';
+let cwd=HOME;
+
+function dp(p){return p===HOME?'~':p.startsWith(HOME+'/')?'~/'+p.slice(HOME.length+1):p}
+function getNode(p){
+  if(!p||p==='/')return vfs;
+  const pts=p.replace(/^\//,'').split('/').filter(Boolean);
+  let n=vfs;for(const k of pts){if(!n||!(k in n))return null;n=n[k];}return n;
+}
+function isD(v){return v!==null&&typeof v==='object'}
+function fic(n){return({txt:'📄',md:'📋',json:'🔧',html:'🌐',js:'⚡',css:'🎨',sh:'📜'})[n.split('.').pop()]||'📄'}
+function rp(p){
+  if(!p||p==='~')return HOME;
+  if(p==='/')return'/';
+  if(p.startsWith('/'))return p;
+  if(p==='..'){const pts=cwd.split('/').filter(Boolean);pts.pop();return'/'+pts.join('/')||'/';}
+  if(p==='.')return cwd;
+  return(cwd==='/'?'':cwd)+'/'+p;
+}
+
+/* ── OUTPUT ── */
+const O=()=>document.getElementById('output');
+function pr(txt,cls='out'){
+  if(txt===null||txt===''){const b=document.createElement('span');b.className='line blank';O().appendChild(b);O().scrollTop=O().scrollHeight;return;}
+  String(txt).split('\n').forEach(l=>{
+    const s=document.createElement('span');s.className='line '+(cls||'out');s.textContent=l;O().appendChild(s);
+  });
+  O().scrollTop=O().scrollHeight;
+}
+function prPr(cmd){
+  const r=document.createElement('div');r.className='prompt-line';
+  r.innerHTML=`<span class="p-user">hyzebox</span><span class="p-at">@</span><span class="p-host">terminal</span><span class="p-sep">:</span><span class="p-path">${dp(cwd)}</span><span class="p-dollar"> $ </span><span class="p-cmd">${(cmd||'').replace(/</g,'&lt;')}</span>`;
+  O().appendChild(r);O().scrollTop=O().scrollHeight;
+}
+function updPr(){
+  document.getElementById('pp').textContent=dp(cwd);
+  document.getElementById('tb-title').textContent=`hyzebox@terminal: ${dp(cwd)}`;
+}
+
+/* ── CLOCK ── */
+function tick(){
+  const n=new Date();
+  const el=document.getElementById('tb-right');
+  if(el)el.textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+setInterval(tick,1000);tick();
+
+/* ── BROWSER ── */
+let currentURL='';
+let brNavTimer=null;
+let brPoll=null;
+
+function openBrowser(url){
+  document.getElementById('browser-overlay').classList.add('open');
+  document.getElementById('br-frame').style.display='block';
+  document.getElementById('br-err').classList.remove('show');
+  if(url){brGo(url);}
+  else{document.getElementById('br-lock').textContent='🔍';document.getElementById('br-addr').value='';setTimeout(()=>document.getElementById('br-addr').focus(),80);}
+}
+function closeBrowser(){
+  document.getElementById('browser-overlay').classList.remove('open');
+  clearTimeout(brNavTimer);
+  clearInterval(brPoll);
+  document.getElementById('br-frame').src='about:blank';
+  document.getElementById('br-err').classList.remove('show');
+  document.getElementById('cmd').focus();
+}
+function brNavigate(){
+  const raw=document.getElementById('br-addr').value.trim();if(!raw)return;
+  const url=raw.startsWith('http')?raw:raw.includes('.')?'https://'+raw:`https://www.bing.com/search?q=${encodeURIComponent(raw)}`;
+  brGo(url);
+}
+function brGo(url){
+  if(!url.startsWith('http'))url='https://'+url;
+  currentURL=url;
+  const fr=document.getElementById('br-frame');
+  const sp=document.getElementById('br-spinner');
+  const addr=document.getElementById('br-addr');
+  const lock=document.getElementById('br-lock');
+  addr.value=url;
+  lock.textContent=url.startsWith('https://')?'🔒':'⚠️';
+  document.getElementById('br-err').classList.remove('show');
+  fr.style.display='block';
+  sp.classList.add('on');
+  clearTimeout(brNavTimer);
+
+  const newFr=fr.cloneNode(false);
+  fr.parentNode.replaceChild(newFr,fr);
+
+  let settled=false;
+  const settle=(success)=>{
+    if(settled)return;settled=true;
+    clearTimeout(brNavTimer);
+    sp.classList.remove('on');
+    if(success){
+      try{
+        const live=newFr.contentWindow.location.href;
+        if(live&&live!=='about:blank'){addr.value=live;currentURL=live;lock.textContent=live.startsWith('https://')?'🔒':'⚠️';}
+      }catch(e){}
+    } else {
+      brErr(url);
+    }
+  };
+
+  newFr.addEventListener('load',()=>settle(true));
+  newFr.addEventListener('error',()=>settle(false));
+  brNavTimer=setTimeout(()=>settle(false),12000);
+  newFr.src=url;
+
+  // Continuously poll for URL changes (catches redirects and in-page navigation)
+  let lastSeen=url;
+  clearInterval(brPoll);
+  brPoll=setInterval(()=>{
+    if(!document.getElementById('browser-overlay').classList.contains('open')){clearInterval(brPoll);return;}
+    try{
+      const live=newFr.contentWindow.location.href;
+      if(live&&live!=='about:blank'&&live!==lastSeen){
+        lastSeen=live;currentURL=live;
+        addr.value=live;
+        lock.textContent=live.startsWith('https://')?'🔒':'⚠️';
+      }
+    }catch(e){/* cross-origin frame — can't read, but navigation already happened inside */}
+  },300);
+}
+function brReload(){if(currentURL)brGo(currentURL);}
+function brErr(url){
+  const fr=document.getElementById('br-frame');
+  fr.style.display='none';
+  document.getElementById('br-emsg').textContent=`${url.replace(/https?:\/\//,'').split('/')[0]} blocked embedding — click below to open directly.`;
+  document.getElementById('br-eurl').textContent=url;
+  document.getElementById('br-err').classList.add('show');
+  document.getElementById('br-spinner').classList.remove('on');
+}
+document.getElementById('br-addr').addEventListener('keydown',e=>{if(e.key==='Enter')brNavigate();if(e.key==='Escape')closeBrowser();});
+
+/* ── HISTORY ── */
+let hist=[],hIdx=-1;
+
+/* ── COMMANDS ── */
+function run(raw){
+  if(!raw.trim()){prPr('');pr(null);return;}
+  hist.unshift(raw);hIdx=-1;
+  prPr(raw);
+  const pts=raw.trim().split(/\s+/),cmd=pts[0].toLowerCase();
+  const folder=getNode(cwd);
+
+  switch(cmd){
+
+    case 'help':
+      pr(null);
+      pr('  HyzeBox OS v5.0.0  —  hyzesh','acc');
+      pr('  ───────────────────────────────────────────────────────','dim');
+      pr(null);
+      pr('  FILE SYSTEM','inf');
+      pr('    ls [path]            list directory','out');
+      pr('    cd <dir>             change directory  (cd .. / cd ~ / cd /path)','out');
+      pr('    pwd                  print working directory','out');
+      pr('    cat <file>           print file contents','out');
+      pr('    mkdir <name>         create directory','out');
+      pr('    touch <file>         create empty file','out');
+      pr('    write <file> <text>  write text to file','out');
+      pr('    rm [-r] <name>       remove file or directory','out');
+      pr('    cp <src> <dst>       copy file','out');
+      pr('    mv <src> <dst>       move / rename','out');
+      pr(null);
+      pr('  BROWSER','inf');
+      pr('    browser              open browser','out');
+      pr('    browser <url>        navigate to URL','out');
+      pr('    browser <query>      search with Bing','out');
+      pr(null);
+      pr('  SYSTEM','inf');
+      pr('    echo <text>          print text','out');
+      pr('    env                  show environment','out');
+      pr('    whoami               current user','out');
+      pr('    uname [-a]           kernel info','out');
+      pr('    date                 current date & time','out');
+      pr('    uptime               system uptime','out');
+      pr('    ps                   running processes','out');
+      pr('    ping <host>          ping host','out');
+      pr('    which <cmd>          locate a command','out');
+      pr('    history              command history','out');
+      pr('    neofetch             system info','out');
+      pr('    clear                clear terminal','out');
+      pr('    exit                 end session','out');
+      pr(null);
+      pr('  TIPS  ↑↓ history  ·  Tab autocomplete  ·  Ctrl+L clear  ·  Ctrl+C cancel','dim');
+      pr(null);
+      break;
+
+    case 'clear':
+      O().innerHTML='';
+      break;
+
+    case 'pwd':
+      pr(cwd);
+      break;
+
+    case 'whoami':
+      pr('hyzebox');
+      break;
+
+    case 'uname':
+      pr(pts[1]==='-a'?'HyzeBox 5.0.0 WebKernel 5.15.0 hyzesh x86_64 GNU/Linux':'HyzeBox');
+      break;
+
+    case 'date':
+      pr(new Date().toString());
+      break;
+
+    case 'uptime':{
+      const s=Math.floor((Date.now()-_boot)/1000);
+      const m=Math.floor(s/60),h=Math.floor(m/60);
+      pr(` up ${h>0?h+'h ':''} ${m%60}min  — load average: 0.08, 0.05, 0.03`);
+      break;
+    }
+
+    case 'env':
+      pr('USER=hyzebox\nHOME=/home/hyzebox\nSHELL=/bin/hyzesh\nTERM=xterm-256color\nPATH=/usr/local/bin:/usr/bin:/bin\nEDITOR=nano\nLANG=en_US.UTF-8');
+      break;
+
+    case 'ps':
+      pr('  PID TTY          TIME CMD','dim');
+      pr('    1 pts/0    00:00:00 hyzesh');
+      pr('   12 pts/0    00:00:00 ps');
+      break;
+
+    case 'echo':
+      pr(pts.slice(1).join(' '));
+      break;
+
+    case 'ls':{
+      const tgt=pts[1]?rp(pts[1]):cwd;
+      const n=getNode(tgt);
+      if(!n){pr(`ls: cannot access '${pts[1]}': No such file or directory`,'err');pr(null);return;}
+      if(!isD(n)){pr(tgt);pr(null);return;}
+      const entries=Object.entries(n);
+      if(!entries.length){pr('(empty)','dim');pr(null);return;}
+      const perRow=Math.max(1,Math.floor((window.innerWidth-44)/170));
+      let row=[];
+      entries.forEach(([k,v],i)=>{
+        row.push({name:k,dir:isD(v)});
+        if(row.length===perRow||i===entries.length-1){
+          const rowEl=document.createElement('div');
+          rowEl.className='line out';rowEl.style.display='flex';rowEl.style.gap='0';
+          row.forEach(({name,dir})=>{
+            const sp=document.createElement('span');
+            sp.textContent=(dir?name+'/':name).padEnd(22);
+            sp.style.color=dir?'#577db7':'#e6edf3';
+            if(dir)sp.style.fontWeight='600';
+            rowEl.appendChild(sp);
+          });
+          O().appendChild(rowEl);O().scrollTop=O().scrollHeight;
+          row=[];
+        }
+      });
+      pr(null);return;
+    }
+
+    case 'cd':{
+      const tgt=pts[1]?rp(pts[1]):HOME;
+      const n=getNode(tgt);
+      if(!n){pr(`cd: ${pts[1]}: No such file or directory`,'err');pr(null);return;}
+      if(!isD(n)){pr(`cd: ${pts[1]}: Not a directory`,'err');pr(null);return;}
+      cwd=tgt;updPr();pr(null);return;
+    }
+
+    case 'mkdir':{
+      const name=pts[1];if(!name){pr('Usage: mkdir <dirname>','warn');break;}
+      if(!folder){pr('Permission denied','err');break;}
+      if(name in folder){pr(`mkdir: cannot create directory '${name}': File exists`,'err');break;}
+      folder[name]={};break;
+    }
+
+    case 'touch':{
+      const name=pts[1];if(!name){pr('Usage: touch <file>','warn');break;}
+      if(!folder){pr('Permission denied','err');break;}
+      folder[name]=folder[name]||'';break;
+    }
+
+    case 'cat':{
+      const name=pts[1];if(!name){pr('Usage: cat <file>','warn');break;}
+      if(!folder||!(name in folder)){pr(`cat: ${name}: No such file or directory`,'err');break;}
+      if(isD(folder[name])){pr(`cat: ${name}: Is a directory`,'err');break;}
+      pr(folder[name]||'(empty file)');break;
+    }
+
+    case 'write':{
+      const name=pts[1],text=pts.slice(2).join(' ');
+      if(!name){pr('Usage: write <file> <text>','warn');break;}
+      if(!folder){pr('Permission denied','err');break;}
+      folder[name]=text;
+      pr(`Wrote ${text.length} bytes to '${name}'`,'ok');break;
+    }
+
+    case 'rm':{
+      const flags=pts.filter(p=>p.startsWith('-'));
+      const name=pts.find(p=>!p.startsWith('-')&&p!=='rm');
+      if(!name){pr('Usage: rm [-r] <name>','warn');break;}
+      if(!folder||!(name in folder)){pr(`rm: cannot remove '${name}': No such file or directory`,'err');break;}
+      if(isD(folder[name])&&Object.keys(folder[name]).length>0&&!flags.some(f=>f.includes('r'))){
+        pr(`rm: cannot remove '${name}': Is a directory`,'warn');
+        pr(`Use 'rm -r ${name}' to remove recursively`,'dim');break;
+      }
+      delete folder[name];break;
+    }
+
+    case 'cp':{
+      const [s,d]=[pts[1],pts[2]];if(!s||!d){pr('Usage: cp <src> <dst>','warn');break;}
+      if(!folder||!(s in folder)){pr(`cp: ${s}: No such file or directory`,'err');break;}
+      if(isD(folder[s])){pr('cp: omitting directory (use -r)','warn');break;}
+      folder[d]=folder[s];pr(`'${s}' -> '${d}'`);break;
+    }
+
+    case 'mv':{
+      const [s,d]=[pts[1],pts[2]];if(!s||!d){pr('Usage: mv <src> <dst>','warn');break;}
+      if(!folder||!(s in folder)){pr(`mv: cannot stat '${s}': No such file or directory`,'err');break;}
+      folder[d]=folder[s];delete folder[s];break;
+    }
+
+    case 'browser':
+    case 'open':{
+      const q=pts.slice(1).join(' ');
+      if(!q){
+        openBrowser('');
+        pr('Opening HyzeChrome...','ok');
+      } else {
+        const url=q.startsWith('http')||q.includes('.')?q:`https://www.bing.com/search?q=${encodeURIComponent(q)}`;
+        openBrowser(url);
+        pr(`Navigating to: ${url}`,'ok');
+      }
+      break;
+    }
+
+    case 'ping':{
+      const host=pts[1]||'localhost';
+      pr(`PING ${host} (127.0.0.1): 56 data bytes`,'dim');
+      let c=0;
+      const iv=setInterval(()=>{
+        const ms=(Math.random()*8+0.8).toFixed(3);
+        pr(`64 bytes from ${host}: icmp_seq=${c++} ttl=64 time=${ms} ms`,'ok');
+        if(c>=4){
+          clearInterval(iv);
+          pr(null);
+          pr(`--- ${host} ping statistics ---`,'dim');
+          pr(`4 packets transmitted, 4 received, 0% packet loss`,'ok');
+          pr(null);
+        }
+      },500);
+      return;
+    }
+
+    case 'history':
+      hist.forEach((h,i)=>pr(`  ${String(i+1).padStart(4)}  ${h}`,'dim'));
+      break;
+
+    case 'which':{
+      const all=['ls','cd','pwd','cat','mkdir','touch','write','rm','cp','mv','browser','echo','env','whoami','uname','date','uptime','ps','neofetch','clear','exit','ping','history','which','man','sudo','apt','help'];
+      if(pts[1]&&all.includes(pts[1]))pr(`/usr/bin/${pts[1]}`);
+      else pr(`${pts[1]||''}: not found`,'err');
+      break;
+    }
+
+    case 'man':
+      if(!pts[1]){pr('What manual page do you want?','warn');break;}
+      pr(`No manual entry for ${pts[1]} in this sandbox.`,'warn');
+      pr(`Try: ${pts[1]} --help`,'dim');
+      break;
+
+    case 'sudo':
+      setTimeout(()=>{
+        pr('[sudo] password for hyzebox: ','warn');
+        setTimeout(()=>pr('hyzebox is not in the sudoers file. This incident will be reported.','err'),700);
+        pr(null);
+      },100);
+      return;
+
+    case 'apt':
+    case 'apt-get':
+      if(pts[1]==='install'){
+        pr(`Reading package lists... Done`,'dim');
+        pr(`Building dependency tree... Done`,'dim');
+        setTimeout(()=>{pr(`E: Unable to locate package ${pts[2]||'<package>'}  (sandbox mode)`,'err');pr(null);},350);
+        return;
+      }
+      pr('This is a sandbox — package manager is read-only.','warn');
+      break;
+
+    case 'neofetch':{
+      const items=folder?Object.keys(folder).filter(k=>!k.startsWith('.')).length:0;
+      const s=Math.floor((Date.now()-_boot)/1000);
+      pr(null);
+      pr('  ██╗  ██╗██╗   ██╗███████╗███████╗   hyzebox@terminal','acc');
+      pr('  ██║  ██║╚██╗ ██╔╝╚══███╔╝██╔════╝   ──────────────────────────────','dim');
+      pr('  ███████║ ╚████╔╝   ███╔╝ █████╗     OS:       HyzeBox 5.0.0','out');
+      pr('  ██╔══██║  ╚██╔╝   ███╔╝  ██╔══╝     Kernel:   WebKernel 5.15.0','out');
+      pr('  ██║  ██║   ██║   ███████╗███████╗   Shell:    hyzesh 5.0','out');
+      pr('  ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝   Browser:  HyzeChrome','out');
+      pr(`                                       CWD:      ${cwd}`,'out');
+      pr(`                                       Items:    ${items} visible`,'out');
+      pr(`                                       Uptime:   ${Math.floor(s/60)}m ${s%60}s`,'out');
+      pr(`                                       Time:     ${new Date().toLocaleTimeString()}`,'out');
+      pr(null);
+      break;
+    }
+
+    case 'exit':
+    case 'logout':
+      pr('logout','dim');
+      pr(null);
+      pr('Session closed. Refresh to restart.','dim');
+      document.getElementById('cmd').disabled=true;
+      document.getElementById('inputrow').style.opacity='.3';
+      return;
+
+    default:
+      pr(`${cmd}: command not found`,'err');
+      pr(`Type 'help' to see available commands.`,'dim');
+  }
+  pr(null);
+}
+
+/* ── INPUT ── */
+const inp=document.getElementById('cmd');
+inp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const v=inp.value;inp.value='';run(v);
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();if(hIdx<hist.length-1){hIdx++;inp.value=hist[hIdx]||'';setTimeout(()=>inp.setSelectionRange(999,999),0);}
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();if(hIdx>0){hIdx--;inp.value=hist[hIdx]||'';}else{hIdx=-1;inp.value='';}
+  } else if(e.key==='Tab'){
+    e.preventDefault();
+    const v=inp.value,pts=v.trim().split(/\s+/);
+    const allCmds=['ls','cd','pwd','cat','mkdir','touch','write','rm','cp','mv','browser','echo','env','whoami','uname','date','uptime','ps','neofetch','clear','exit','ping','history','which','man','sudo','apt','help'];
+    if(pts.length===1&&v){
+      const m=allCmds.filter(c=>c.startsWith(v));
+      if(m.length===1){inp.value=m[0]+' ';}
+      else if(m.length>1){pr('\n'+m.join('   '),'dim');}
+    } else if(pts.length>1){
+      const prefix=pts[pts.length-1];
+      const f=getNode(cwd);
+      if(f){const m=Object.keys(f).filter(k=>k.startsWith(prefix));
+        if(m.length===1){pts[pts.length-1]=m[0]+(isD(f[m[0]])?'/':'');inp.value=pts.join(' ');}
+        else if(m.length>1){pr('\n'+m.join('   '),'dim');}
+      }
+    }
+  } else if(e.key==='l'&&e.ctrlKey){
+    e.preventDefault();O().innerHTML='';
+  } else if(e.key==='c'&&e.ctrlKey){
+    e.preventDefault();prPr(inp.value+'^C');pr(null);inp.value='';hIdx=-1;
+  }
+});
+document.addEventListener('click',()=>{
+  if(!document.getElementById('browser-overlay').classList.contains('open'))inp.focus();
+});
+
+/* ── BOOT ── */
+const bootSeq=[
+  {t:'[    0.000000] HyzeBox Kernel v5.15.0 booting...',d:0},
+  {t:'[    0.142310] Initializing memory subsystem',d:110},
+  {t:'[    0.298441] Loading hyzesh shell environment',d:220},
+  {t:'[    0.501823] Mounting virtual filesystem',d:330},
+  {t:'[    0.612004] Starting network stack',d:430},
+  {t:'[    0.789234] Starting HyzeChrome browser engine',d:530},
+  {t:'[    0.901120] All systems nominal                             [ OK ]',d:640,ok:true},
+  {t:'',d:760},
+  {t:'HyzeBox OS 5.0.0 (WebKernel 5.15.0)',d:820,acc:true},
+  {t:'hyzebox login: hyzebox',d:940},
+  {t:'Password: ········',d:1060,dim:true},
+  {t:'',d:1180},
+  {t:'Welcome to HyzeBox OS 5.0.0  (WebKernel 5.15.0 x86_64)',d:1250},
+  {t:'Last login: '+new Date().toDateString()+' from tty1',d:1320,dim:true},
+  {t:'Type "help" for available commands.',d:1380,dim:true},
+  {t:'',d:1440},
+];
+const bc=document.getElementById('boot-lines');
+bootSeq.forEach(({t,d,ok,acc,dim})=>{
+  setTimeout(()=>{
+    const s=document.createElement('span');s.className='boot-line';
+    if(ok){s.innerHTML=t.replace('[ OK ]','<span class="ok">[ OK ]</span>');}
+    else if(acc){s.innerHTML=`<span class="acc">${t}</span>`;}
+    else{s.textContent=t;if(dim)s.style.color='var(--txt2)';}
+    bc.appendChild(s);
+  },d);
+});
+setTimeout(()=>{
+  const b=document.getElementById('boot');
+  b.style.transition='opacity .35s';b.style.opacity='0';
+  setTimeout(()=>{
+    b.style.display='none';
+    const tm=document.getElementById('terminal');tm.style.display='flex';
+    const _nf=getNode(cwd);
+    const _ni=_nf?Object.keys(_nf).filter(k=>!k.startsWith('.')).length:0;
+    const _ns=Math.floor((Date.now()-_boot)/1000);
+    pr(null);
+    pr('  ██╗  ██╗██╗   ██╗███████╗███████╗   hyzebox@terminal','acc');
+    pr('  ██║  ██║╚██╗ ██╔╝╚══███╔╝██╔════╝   ──────────────────────────────','dim');
+    pr('  ███████║ ╚████╔╝   ███╔╝ █████╗     OS:       HyzeBox 5.0.0','out');
+    pr('  ██╔══██║  ╚██╔╝   ███╔╝  ██╔══╝     Kernel:   WebKernel 5.15.0','out');
+    pr('  ██║  ██║   ██║   ███████╗███████╗   Shell:    hyzesh 5.0','out');
+    pr('  ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝   Browser:  HyzeChrome','out');
+    pr(`                                       CWD:      ${cwd}`,'out');
+    pr(`                                       Items:    ${_ni} visible`,'out');
+    pr(`                                       Uptime:   ${Math.floor(_ns/60)}m ${_ns%60}s`,'out');
+    pr(`                                       Time:     ${new Date().toLocaleTimeString()}`,'out');
+    pr(null);
+    pr('Type "help" to get started  ·  Type "browser" to surf the web','dim');
+    pr(null);
+    inp.focus();
+  },360);
+},1800);
+</script>
+</body>
+</html>
